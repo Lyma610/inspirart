@@ -79,30 +79,14 @@ class _SplashScreenState extends State<SplashScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Logo principal
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.brush,
-                        size: 60,
-                        color: AppTheme.primaryColor,
+                    Center(
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        height: 120,
+                        width: 120,
                       ),
                     ),
                     const SizedBox(height: 30),
-                    
-                    // Nome do app
                     const Text(
                       'INSPIRART',
                       style: TextStyle(
@@ -112,10 +96,7 @@ class _SplashScreenState extends State<SplashScreen>
                         letterSpacing: 2,
                       ),
                     ),
-                    
                     const SizedBox(height: 10),
-                    
-                    // Slogan
                     const Text(
                       'Compartilhe sua arte',
                       style: TextStyle(
@@ -124,10 +105,7 @@ class _SplashScreenState extends State<SplashScreen>
                         fontWeight: FontWeight.w300,
                       ),
                     ),
-                    
                     const SizedBox(height: 50),
-                    
-                    // Indicador de carregamento
                     const CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       strokeWidth: 3,
@@ -141,4 +119,4 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
   }
-} 
+}
