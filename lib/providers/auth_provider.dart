@@ -36,19 +36,19 @@ class AuthProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         // Supondo que a resposta seja um token ou algum dado de usuário
-        final responseData = jsonDecode(response.body);
-        _userId = responseData['id']; // Modifique de acordo com a resposta da API
-        _userEmail = responseData['email'];
-        _userName = responseData['name'];  // Altere conforme o formato da resposta da API
+        // final responseData = jsonDecode(response.body);
+        // _userId = responseData['id']; // Modifique de acordo com a resposta da API
+        // _userEmail = responseData['email'];
+        // _userName = responseData['name'];  // Altere conforme o formato da resposta da API
 
         _isAuthenticated = true;
 
         // Salve os dados de autenticação no SharedPreferences
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('isAuthenticated', true);
-        await prefs.setString('userId', _userId!);
-        await prefs.setString('userEmail', _userEmail!);
-        await prefs.setString('userName', _userName!);
+        // final prefs = await SharedPreferences.getInstance();
+        // await prefs.setBool('isAuthenticated', true);
+        // await prefs.setString('userId', _userId!);
+        // await prefs.setString('userEmail', _userEmail!);
+        // await prefs.setString('userName', _userName!);
 
         notifyListeners();
         return true;
