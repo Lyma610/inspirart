@@ -45,7 +45,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
 
         if (mounted) {
-          context.go('/home');
+          context.go('/login');
         }
       } catch (e) {
         if (mounted) {
