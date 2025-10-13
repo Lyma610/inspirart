@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/api_service.dart';  // Certifique-se de importar seu ApiService
+import '../services/api_service.dart';
 import 'dart:convert';
+import 'dart:io';
 
 class AuthProvider extends ChangeNotifier {
   bool _isAuthenticated = false;
@@ -31,19 +32,16 @@ class AuthProvider extends ChangeNotifier {
   // Função de login que chama a API
   Future<bool> login(String email, String password) async {
     try {
-      // Chama a API de login
       final response = await ApiService.loginUser(email: email, senha: password);
 
       if (response.statusCode == 200) {
-        //Supondo que a resposta seja um token ou algum dado de usuário
         final responseData = jsonDecode(response.body);
-        _userId = responseData['id'].toString(); // Modifique de acordo com a resposta da API
-        _userEmail = responseData['email'];
-        _userName = responseData['name'];  // Altere conforme o formato da resposta da API
+        _userId = responseData['id']?.toString() ?? '';
+        _userEmail = responseData['email'] ?? email;
+        _userName = responseData['nome'] ?? responseData['name'] ?? 'Usuário';
 
         _isAuthenticated = true;
 
-        //Salve os dados de autenticação no SharedPreferences
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('isAuthenticated', true);
         await prefs.setString('userId', _userId!);
@@ -53,11 +51,9 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
         return true;
       } else {
-        // Caso a API retorne erro (ex: 401 ou outro status code)
         return false;
       }
     } catch (e) {
-      // Se ocorrer algum erro de conexão ou outro
       print('Erro no login: $e');
       return false;
     }

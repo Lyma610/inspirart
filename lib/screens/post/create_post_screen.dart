@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../providers/post_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../services/api_service.dart';
 import '../../utils/app_theme.dart';
+import '../../utils/platform_helper.dart';
+import 'dart:typed_data';
+import 'dart:io';
 
 class CreatePostScreen extends StatefulWidget {
-  final List<String>? images;
+  final List<XFile>? images;
 
   const CreatePostScreen({super.key, this.images});
 
@@ -20,23 +26,32 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final List<String> _selectedCategories = [];
   bool _isLoading = false;
 
-  final List<String> _availableCategories = [
-    'Fotografia',
-    'Ilustração',
-    'Design',
-    'Arte Digital',
-    'Grafite',
-    'Arte Urbana',
-    'Pintura',
-    'Escultura',
-    'Arquitetura',
-    'Moda',
-  ];
+  List<Category> _availableCategories = [];
+  Category? _selectedCategoryObj;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
 
   @override
   void dispose() {
     _captionController.dispose();
     super.dispose();
+  }
+
+  void _loadCategories() async {
+    final postProvider = Provider.of<PostProvider>(context, listen: false);
+    
+    // Aguardar carregamento se ainda não foram carregados
+    if (postProvider.categories.isEmpty) {
+      await postProvider.loadCategories();
+    }
+    
+    setState(() {
+      _availableCategories = postProvider.categories;
+    });
   }
 
   @override
@@ -52,16 +67,25 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           onPressed: () => context.go('/home'),
         ),
         actions: [
-          TextButton(
-            onPressed: _canPost() ? _createPost : null,
-            child: Text(
-              'Publicar',
-              style: TextStyle(
-                color: _canPost() ? AppTheme.primaryColor : AppTheme.textSecondaryColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+          _isLoading
+              ? const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : TextButton(
+                  onPressed: _canPost() ? _createPost : null,
+                  child: Text(
+                    'Publicar',
+                    style: TextStyle(
+                      color: _canPost() ? AppTheme.primaryColor : AppTheme.textSecondaryColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
         ],
       ),
       body: SingleChildScrollView(
@@ -87,11 +111,26 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                       children: [
                         ClipRRect(
                           borderRadius: BorderRadius.circular(10),
-                          child: Image.network(
-                            widget.images![_currentImageIndex],
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            height: double.infinity,
+                          child: FutureBuilder<Uint8List>(
+                            future: widget.images![_currentImageIndex].readAsBytes(),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData) {
+                                return Image.memory(
+                                  snapshot.data!,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                );
+                              }
+                              return Container(
+                                width: double.infinity,
+                                height: double.infinity,
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+                            },
                           ),
                         ),
                         if (widget.images!.length > 1)
@@ -169,9 +208,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             
             const SizedBox(height: 24),
             
-            // Seleção de categorias
+            // Seleção de categoria
             const Text(
-              'Categorias',
+              'Categoria',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -179,40 +218,28 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ),
             const SizedBox(height: 12),
             
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _availableCategories.map((category) {
-                final isSelected = _selectedCategories.contains(category);
-                return FilterChip(
-                  label: Text(category),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        if (_selectedCategories.length < 3) {
-                          _selectedCategories.add(category);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Máximo de 3 categorias permitido'),
-                            ),
-                          );
-                        }
-                      } else {
-                        _selectedCategories.remove(category);
-                      }
-                    });
-                  },
-                  selectedColor: AppTheme.primaryColor.withValues(alpha: 0.2),
-                  checkmarkColor: AppTheme.primaryColor,
-                  labelStyle: TextStyle(
-                    color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondaryColor,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                  ),
+            DropdownButtonFormField<Category>(
+              value: _selectedCategoryObj,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                hintText: 'Selecione uma categoria',
+              ),
+              items: _availableCategories.map((category) {
+                return DropdownMenuItem<Category>(
+                  value: category,
+                  child: Text(category.nome),
                 );
               }).toList(),
+              onChanged: (Category? value) {
+                setState(() {
+                  _selectedCategoryObj = value;
+                });
+              },
             ),
+            
+
             
             const SizedBox(height: 24),
             
@@ -292,61 +319,77 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   }
 
   bool _canPost() {
-    return widget.images != null &&
-           widget.images!.isNotEmpty &&
-           _captionController.text.trim().isNotEmpty &&
-           _selectedCategories.isNotEmpty &&
-           !_isLoading;
+    final hasImage = widget.images != null && widget.images!.isNotEmpty;
+    final hasCaption = _captionController.text.trim().isNotEmpty;
+    final hasCategory = _selectedCategoryObj != null;
+    
+    print('Can post check: image=$hasImage, caption=$hasCaption, category=$hasCategory, loading=$_isLoading');
+    
+    return hasImage && hasCaption && hasCategory && !_isLoading;
   }
 
   void _createPost() async {
-    if (_canPost()) {
-      setState(() => _isLoading = true);
+    print('Create post called');
+    
+    if (!_canPost()) {
+      print('Cannot post - validation failed');
+      return;
+    }
 
-      try {
-        final postProvider = Provider.of<PostProvider>(context, listen: false);
-        final userProvider = Provider.of<UserProvider>(context, listen: false);
-        final currentUser = userProvider.currentUser!;
-        
-        final post = Post(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          userId: currentUser.id,
-          userName: currentUser.name,
-          userAvatar: currentUser.avatar,
-          imageUrl: widget.images![_currentImageIndex],
-          caption: _captionController.text.trim(),
-          categories: _selectedCategories,
-          likes: 0,
-          comments: 0,
-          shares: 0,
-          createdAt: DateTime.now(),
+    setState(() => _isLoading = true);
+    print('Loading started');
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final postProvider = Provider.of<PostProvider>(context, listen: false);
+      
+      print('Creating post with: category=${_selectedCategoryObj!.id}');
+      
+      final response = await ApiService.createPost(
+        titulo: 'Post ${DateTime.now().millisecondsSinceEpoch}',
+        descricao: _captionController.text.trim(),
+        categoriaId: _selectedCategoryObj!.id,
+        usuarioId: int.parse(authProvider.userId ?? '1'),
+        imageFile: widget.images![_currentImageIndex],
+      );
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
+
+      if (response.statusCode == 200 && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Post criado com sucesso!'),
+            backgroundColor: AppTheme.successColor,
+          ),
         );
-
-        // Adicionar post ao provider
-        postProvider.addPost(post);
-
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Post criado com sucesso!'),
-              backgroundColor: AppTheme.successColor,
-            ),
-          );
-          context.go('/home');
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erro ao criar post: ${e.toString()}'),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
+        
+        // Recarregar posts
+        await postProvider.loadPosts();
+        
+        context.go('/home');
+      } else if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao criar post: ${response.statusCode}'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error creating post: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao criar post: ${e.toString()}'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        print('Loading finished');
       }
     }
   }

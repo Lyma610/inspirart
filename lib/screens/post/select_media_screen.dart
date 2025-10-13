@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../utils/app_theme.dart';
+import '../post/create_post_screen.dart';
+import 'dart:typed_data';
+import 'dart:io';
 
 class SelectMediaScreen extends StatefulWidget {
   const SelectMediaScreen({super.key});
@@ -10,7 +14,8 @@ class SelectMediaScreen extends StatefulWidget {
 }
 
 class _SelectMediaScreenState extends State<SelectMediaScreen> {
-  final List<String> _selectedImages = [];
+  final List<XFile> _selectedImages = [];
+  final ImagePicker _picker = ImagePicker();
   final List<String> _galleryImages = [
     'https://via.placeholder.com/200x200/6B46C1/FFFFFF?text=Arte+1',
     'https://via.placeholder.com/200x200/9F7AEA/FFFFFF?text=Arte+2',
@@ -118,10 +123,10 @@ class _SelectMediaScreenState extends State<SelectMediaScreen> {
               itemCount: _galleryImages.length,
               itemBuilder: (context, index) {
                 final imageUrl = _galleryImages[index];
-                final isSelected = _selectedImages.contains(imageUrl);
+                final isSelected = false; // Placeholder images não são selecionáveis
                 
                 return GestureDetector(
-                  onTap: () => _toggleImageSelection(imageUrl),
+                  onTap: () => _pickImage(),
                   child: Stack(
                     children: [
                       Container(
@@ -134,42 +139,16 @@ class _SelectMediaScreenState extends State<SelectMediaScreen> {
                         ),
                       ),
                       
-                      // Overlay de seleção
-                      if (isSelected)
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            color: AppTheme.primaryColor.withValues(alpha: 0.7),
-                          ),
-                          child: const Icon(
-                            Icons.check_circle,
-                            color: Colors.white,
-                            size: 32,
-                          ),
+                      // Overlay para adicionar
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.black.withValues(alpha: 0.3),
                         ),
-                      
-                      // Ícone de seleção
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            color: isSelected ? AppTheme.primaryColor : Colors.white,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondaryColor,
-                              width: 2,
-                            ),
-                          ),
-                          child: isSelected
-                              ? const Icon(
-                                  Icons.check,
-                                  color: Colors.white,
-                                  size: 16,
-                                )
-                              : null,
+                        child: const Icon(
+                          Icons.add_photo_alternate,
+                          color: Colors.white,
+                          size: 32,
                         ),
                       ),
                     ],
@@ -179,6 +158,68 @@ class _SelectMediaScreenState extends State<SelectMediaScreen> {
             ),
           ),
           
+          // Lista de imagens selecionadas
+          if (_selectedImages.isNotEmpty)
+            Container(
+              height: 120,
+              padding: const EdgeInsets.all(16),
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _selectedImages.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                    width: 100,
+                    margin: const EdgeInsets.only(right: 8),
+                    child: Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: FutureBuilder<Uint8List>(
+                            future: _selectedImages[index].readAsBytes(),
+                            builder: (context, snapshot) {
+                              if (snapshot.hasData) {
+                                return Image.memory(
+                                  snapshot.data!,
+                                  width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,
+                                );
+                              }
+                              return Container(
+                                width: 100,
+                                height: 100,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.image),
+                              );
+                            },
+                          ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: GestureDetector(
+                            onTap: () => _removeImage(index),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          
           // Botões de ação
           Container(
             padding: const EdgeInsets.all(16),
@@ -187,9 +228,7 @@ class _SelectMediaScreenState extends State<SelectMediaScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () {
-                      // TODO: Implementar câmera
-                    },
+                    onPressed: _pickImageFromCamera,
                     icon: const Icon(Icons.camera_alt),
                     label: const Text('Câmera'),
                     style: OutlinedButton.styleFrom(
@@ -217,29 +256,44 @@ class _SelectMediaScreenState extends State<SelectMediaScreen> {
     );
   }
 
-  void _toggleImageSelection(String imageUrl) {
-    setState(() {
-      if (_selectedImages.contains(imageUrl)) {
-        _selectedImages.remove(imageUrl);
-      } else {
-        if (_selectedImages.length < 10) { // Limite de 10 imagens
-          _selectedImages.add(imageUrl);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Máximo de 10 imagens permitido'),
-            ),
-          );
+  Future<void> _pickImage() async {
+    final List<XFile> images = await _picker.pickMultiImage();
+    if (images.isNotEmpty) {
+      setState(() {
+        for (var image in images) {
+          if (_selectedImages.length < 10) {
+            _selectedImages.add(image);
+          }
         }
-      }
+      });
+    }
+  }
+
+  Future<void> _pickImageFromCamera() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.camera);
+    if (image != null) {
+      setState(() {
+        if (_selectedImages.length < 10) {
+          _selectedImages.add(image);
+        }
+      });
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
     });
   }
 
   void _proceedToCreate() {
     if (_selectedImages.isNotEmpty) {
-      // Codificar URLs das imagens para passar como parâmetros
-      final imagesParam = _selectedImages.join('|');
-      context.go('/create-post?images=$imagesParam');
+      // Navegar para tela de criação com as imagens
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => CreatePostScreen(images: _selectedImages),
+        ),
+      );
     }
   }
 } 
