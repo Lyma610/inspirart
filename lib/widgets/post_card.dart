@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 import '../providers/post_provider.dart';
 import '../utils/app_theme.dart';
+import 'cached_image.dart';
 
 class PostCard extends StatelessWidget {
   final Post post;
@@ -72,15 +73,10 @@ class PostCard extends StatelessWidget {
           // Imagem do post
           AspectRatio(
             aspectRatio: 1,
-            child: Container(
+            child: CachedImage(
+              imageUrl: post.imageUrl,
               width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                image: DecorationImage(
-                  image: NetworkImage(post.imageUrl),
-                  fit: BoxFit.cover,
-                ),
-              ),
+              borderRadius: BorderRadius.circular(8),
             ),
           ),
           

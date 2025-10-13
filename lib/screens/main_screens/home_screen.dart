@@ -132,9 +132,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       height: 50,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
-                        itemCount: postProvider.getCategories().length,
+                        itemCount: postProvider.getCategoryNames().length,
                         itemBuilder: (context, index) {
-                          final category = postProvider.getCategories()[index];
+                          final category = postProvider.getCategoryNames()[index];
                           final isSelected = postProvider.selectedCategory == category;
                           
                           return Padding(
@@ -160,7 +160,38 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 20),
                     
                     // Lista de posts
-                    ...postProvider.filteredPosts.map((post) => PostCard(post: post)),
+                    if (postProvider.isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (postProvider.filteredPosts.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(32),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.photo_library_outlined,
+                                size: 64,
+                                color: AppTheme.textSecondaryColor,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Nenhum post encontrado',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: AppTheme.textSecondaryColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      ...postProvider.filteredPosts.map((post) => PostCard(post: post)),
                   ],
                 );
               },

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../services/api_service.dart';  // Certifique-se de importar seu ApiService
+import '../services/api_service.dart';
 import 'dart:convert';
+import 'dart:io';
 
 class AuthProvider extends ChangeNotifier {
   bool _isAuthenticated = false;

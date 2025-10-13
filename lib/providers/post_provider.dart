@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import '../services/api_service.dart';
 
 class Post {
   final String id;
@@ -30,86 +32,128 @@ class Post {
     this.isLiked = false,
     this.isSaved = false,
   });
+
+  factory Post.fromJson(Map<String, dynamic> json) {
+    // Construir URL para buscar imagem do backend
+    String imageUrl = '';
+    if (json['id'] != null) {
+      imageUrl = 'http://localhost:8080/postagem/image/${json['id']}';
+    }
+    
+    return Post(
+      id: json['id']?.toString() ?? '',
+      userId: json['usuario']?['id']?.toString() ?? '',
+      userName: json['usuario']?['nome'] ?? 'Usuário',
+      userAvatar: 'https://via.placeholder.com/50',
+      imageUrl: imageUrl.isEmpty ? 'https://via.placeholder.com/400x500' : imageUrl,
+      caption: json['descricao'] ?? '',
+      categories: [json['categoria']?['nome'] ?? 'Geral'],
+      likes: 0,
+      comments: 0,
+      shares: 0,
+      createdAt: DateTime.tryParse(json['dataCadastro'] ?? '') ?? DateTime.now(),
+    );
+  }
+}
+
+class Category {
+  final int id;
+  final String nome;
+
+  Category({required this.id, required this.nome});
+
+  factory Category.fromJson(Map<String, dynamic> json) {
+    return Category(
+      id: json['id'] ?? 0,
+      nome: json['nome'] ?? '',
+    );
+  }
+}
+
+class Genre {
+  final int id;
+  final String nome;
+
+  Genre({required this.id, required this.nome});
+
+  factory Genre.fromJson(Map<String, dynamic> json) {
+    return Genre(
+      id: json['id'] ?? 0,
+      nome: json['nome'] ?? '',
+    );
+  }
 }
 
 class PostProvider extends ChangeNotifier {
   List<Post> _posts = [];
   List<Post> _filteredPosts = [];
+  List<Category> _categories = [];
+  List<Genre> _genres = [];
   String _selectedCategory = 'Todas';
+  bool _isLoading = false;
 
   List<Post> get posts => _posts;
   List<Post> get filteredPosts => _filteredPosts;
+  List<Category> get categories => _categories;
+  List<Genre> get genres => _genres;
   String get selectedCategory => _selectedCategory;
+  bool get isLoading => _isLoading;
 
   PostProvider() {
-    _loadSamplePosts();
+    loadPosts();
+    loadCategories();
   }
 
-  void _loadSamplePosts() {
-    _posts = [
-      Post(
-        id: '1',
-        userId: 'user1',
-        userName: 'ArtistaGrafite',
-        userAvatar: 'https://via.placeholder.com/50',
-        imageUrl: 'https://via.placeholder.com/400x500/6B46C1/FFFFFF?text=Grafite+Arte',
-        caption: 'Nova obra de rua inspirada na cultura urbana! 🎨 #grafite #arte #rua',
-        categories: const ['Grafite', 'Arte Urbana'],
-        likes: 124,
-        comments: 18,
-        shares: 5,
-        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
-        isLiked: false,
-        isSaved: false,
-      ),
-      Post(
-        id: '2',
-        userId: 'user2',
-        userName: 'FotógrafoPro',
-        userAvatar: 'https://via.placeholder.com/50',
-        imageUrl: 'https://via.placeholder.com/400x500/ED8936/FFFFFF?text=Fotografia',
-        caption: 'Capturando momentos únicos da vida urbana 📸 #fotografia #arte #vida',
-        categories: const ['Fotografia', 'Arte Digital'],
-        likes: 89,
-        comments: 12,
-        shares: 3,
-        createdAt: DateTime.now().subtract(const Duration(hours: 4)),
-        isLiked: false,
-        isSaved: false,
-      ),
-      Post(
-        id: '3',
-        userId: 'user3',
-        userName: 'DesignerCriativo',
-        userAvatar: 'https://via.placeholder.com/50',
-        imageUrl: 'https://via.placeholder.com/400x500/38A169/FFFFFF?text=Design',
-        caption: 'Novo conceito de design minimalista ✨ #design #minimalismo #criatividade',
-        categories: const ['Design', 'Arte Digital'],
-        likes: 156,
-        comments: 24,
-        shares: 8,
-        createdAt: DateTime.now().subtract(const Duration(hours: 6)),
-        isLiked: false,
-        isSaved: false,
-      ),
-      Post(
-        id: '4',
-        userId: 'user4',
-        userName: 'IlustradorArte',
-        userAvatar: 'https://via.placeholder.com/50',
-        imageUrl: 'https://via.placeholder.com/400x500/9F7AEA/FFFFFF?text=Ilustração',
-        caption: 'Personagem criado com muito carinho 💕 #ilustração #arte #personagem',
-        categories: const ['Ilustração', 'Arte Digital'],
-        likes: 203,
-        comments: 31,
-        shares: 12,
-        createdAt: DateTime.now().subtract(const Duration(hours: 8)),
-        isLiked: false,
-        isSaved: false,
-      ),
-    ];
-    _filteredPosts = _posts;
+  Future<void> loadPosts() async {
+    _isLoading = true;
     notifyListeners();
+    
+    try {
+      final response = await ApiService.getAllPosts();
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        _posts = data.map((json) => Post.fromJson(json)).toList();
+        _filteredPosts = _posts;
+      }
+    } catch (e) {
+      print('Erro ao carregar posts: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadCategories() async {
+    try {
+      final response = await ApiService.getCategories();
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        _categories = data.map((json) => Category.fromJson(json)).toList();
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Erro ao carregar categorias: $e');
+    }
+  }
+
+
+
+  Future<void> loadPostsByCategory(int categoryId) async {
+    _isLoading = true;
+    notifyListeners();
+    
+    try {
+      final response = await ApiService.getPostsByCategory(categoryId);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        _filteredPosts = data.map((json) => Post.fromJson(json)).toList();
+      }
+    } catch (e) {
+      print('Erro ao carregar posts por categoria: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   void filterByCategory(String category) {
@@ -117,6 +161,14 @@ class PostProvider extends ChangeNotifier {
     if (category == 'Todas') {
       _filteredPosts = _posts;
     } else {
+      final categoryObj = _categories.firstWhere(
+        (c) => c.nome == category,
+        orElse: () => Category(id: 0, nome: ''),
+      );
+      if (categoryObj.id > 0) {
+        loadPostsByCategory(categoryObj.id);
+        return;
+      }
       _filteredPosts = _posts
           .where((post) => post.categories.contains(category))
           .toList();
@@ -163,12 +215,9 @@ class PostProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<String> getCategories() {
-    final categories = <String>{};
-    for (final post in _posts) {
-      categories.addAll(post.categories);
-    }
-    return ['Todas', ...categories];
+  List<String> getCategoryNames() {
+    final categoryNames = _categories.map((c) => c.nome).toList();
+    return ['Todas', ...categoryNames];
   }
 
   List<Post> getFilteredPosts(String query, String? category) {
