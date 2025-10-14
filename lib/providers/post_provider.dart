@@ -102,6 +102,7 @@ class PostProvider extends ChangeNotifier {
   PostProvider() {
     loadPosts();
     loadCategories();
+    loadGenres();
   }
 
   Future<void> loadPosts() async {
@@ -133,6 +134,19 @@ class PostProvider extends ChangeNotifier {
       }
     } catch (e) {
       print('Erro ao carregar categorias: $e');
+    }
+  }
+
+  Future<void> loadGenres() async {
+    try {
+      final response = await ApiService.getGenres();
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        _genres = data.map((json) => Genre.fromJson(json)).toList();
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Erro ao carregar gêneros: $e');
     }
   }
 
