@@ -105,7 +105,7 @@ class ApiService {
     var request = http.MultipartRequest('POST', url);
     
     // Adicionar campos do formulário conforme esperado pelo backend
-    request.fields['titulo'] = titulo;
+    request.fields['legenda'] = titulo;
     request.fields['descricao'] = descricao;
     request.fields['categoria.id'] = categoriaId.toString();
     request.fields['usuario.id'] = usuarioId.toString();

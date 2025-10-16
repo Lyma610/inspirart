@@ -278,8 +278,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               },
             ),
             
-
-            
             const SizedBox(height: 24),
             
             // Botões de navegação
