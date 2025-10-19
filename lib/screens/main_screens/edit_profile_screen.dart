@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../providers/user_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../utils/app_theme.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -15,7 +17,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _bioController;
   String? _selectedImage;
+  XFile? _selectedImageFile;
   bool _hasChanges = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -40,12 +44,91 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final user = context.read<UserProvider>().currentUser;
     final hasChanges = _nameController.text != user?.name ||
         _bioController.text != user?.bio ||
-        _selectedImage != null;
+        _selectedImageFile != null;
         
     if (hasChanges != _hasChanges) {
       setState(() {
         _hasChanges = hasChanges;
       });
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
+      );
+      
+      if (image != null) {
+        setState(() {
+          _selectedImageFile = image;
+          _selectedImage = image.path;
+        });
+        _checkChanges();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao selecionar imagem: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    if (!_hasChanges) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final userProvider = context.read<UserProvider>();
+      
+      if (authProvider.userId != null) {
+        final success = await userProvider.editProfile(
+          id: int.parse(authProvider.userId!),
+          nome: _nameController.text.trim(),
+          nivelAcesso: 'USUARIO', // Pode ser ajustado conforme necessário
+          imageFile: _selectedImageFile,
+        );
+
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Perfil atualizado com sucesso!'),
+              backgroundColor: AppTheme.successColor,
+            ),
+          );
+          context.pop();
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Erro ao atualizar perfil'),
+              backgroundColor: AppTheme.errorColor,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao salvar: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -140,16 +223,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               leading: const Icon(Icons.photo_library),
                               title: const Text('Escolher da galeria'),
                               onTap: () {
-                                // TODO: Implementar seleção de imagem
                                 context.pop();
+                                _pickImage(ImageSource.gallery);
                               },
                             ),
                             ListTile(
                               leading: const Icon(Icons.camera_alt),
                               title: const Text('Tirar foto'),
                               onTap: () {
-                                // TODO: Implementar câmera
                                 context.pop();
+                                _pickImage(ImageSource.camera);
                               },
                             ),
                             if (_selectedImage != null || user?.avatar != null)

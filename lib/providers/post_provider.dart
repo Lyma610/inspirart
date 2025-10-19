@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../services/api_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 class Post {
   final String id;
@@ -33,6 +34,7 @@ class Post {
     this.isSaved = false,
   });
 
+
   factory Post.fromJson(Map<String, dynamic> json) {
     // Construir URL para buscar imagem do backend
     String imageUrl = '';
@@ -40,12 +42,18 @@ class Post {
       imageUrl = 'http://localhost:8080/postagem/image/${json['id']}';
     }
     
+    // Construir URL para avatar do usuário
+    String userAvatar = '';
+    if (json['usuario']?['id'] != null) {
+      userAvatar = 'http://localhost:8080/usuario/image/${json['usuario']['id']}';
+    }
+    
     return Post(
       id: json['id']?.toString() ?? '',
       userId: json['usuario']?['id']?.toString() ?? '',
       userName: json['usuario']?['nome'] ?? 'Usuário',
-      userAvatar: 'https://via.placeholder.com/50',
-      imageUrl: imageUrl.isEmpty ? 'https://via.placeholder.com/400x500' : imageUrl,
+      userAvatar: userAvatar,
+      imageUrl: imageUrl,
       caption: json['descricao'] ?? '',
       categories: [json['categoria']?['nome'] ?? 'Geral'],
       likes: 0,
@@ -311,6 +319,71 @@ class PostProvider extends ChangeNotifier {
       }
       
       notifyListeners();
+    }
+  }
+
+  // Criar nova postagem
+  Future<bool> createPost({
+    required String titulo,
+    required String descricao,
+    required int categoriaId,
+    required int usuarioId,
+    int? generoId,
+    XFile? imageFile,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    
+    try {
+      final response = await ApiService.createPost(
+        titulo: titulo,
+        descricao: descricao,
+        categoriaId: categoriaId,
+        usuarioId: usuarioId,
+        generoId: generoId,
+        imageFile: imageFile,
+      );
+      
+      if (response.statusCode == 200) {
+        // Recarregar posts após criação
+        await loadPosts();
+        return true;
+      } else if (response.statusCode == 500) {
+        // Erro 500 - problema no servidor
+        print('Erro 500: Problema no servidor - ${response.body}');
+        return false;
+      }
+      return false;
+    } catch (e) {
+      print('Erro ao criar post: $e');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Criar reação (like)
+  Future<bool> createReaction({
+    required int usuarioId,
+    required int postagemId,
+  }) async {
+    try {
+      final response = await ApiService.createReaction(
+        usuarioId: usuarioId,
+        postagemId: postagemId,
+        tipoReacao: 'like', // Tipo padrão de reação
+      );
+      
+      if (response.statusCode == 200) {
+        // Atualizar o estado local do post
+        toggleLike(postagemId.toString());
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Erro ao criar reação: $e');
+      return false;
     }
   }
 }

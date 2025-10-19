@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import '../services/api_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 class User {
   final String id;
@@ -24,6 +27,20 @@ class User {
     required this.categories,
     this.isFollowing = false,
   });
+
+  factory User.fromJson(Map<String, dynamic> json) {
+    return User(
+      id: json['id']?.toString() ?? '',
+      name: json['nome'] ?? '',
+      email: json['email'] ?? '',
+      avatar: json['foto'] != null ? 'http://localhost:8080/usuario/image/${json['id']}' : 'https://via.placeholder.com/100',
+      bio: json['bio'] ?? '',
+      followers: 0, // Será implementado quando houver sistema de seguidores
+      following: 0, // Será implementado quando houver sistema de seguidores
+      posts: 0, // Será implementado quando houver contagem de posts
+      categories: [], // Será implementado quando houver categorias de usuário
+    );
+  }
 }
 
 class UserProvider extends ChangeNotifier {
@@ -31,15 +48,103 @@ class UserProvider extends ChangeNotifier {
   List<User> _users = [];
   List<User> _followers = [];
   List<User> _following = [];
+  bool _isLoading = false;
 
   User? get currentUser => _currentUser;
   List<User> get users => _users;
   List<User> get followers => _followers;
   List<User> get following => _following;
+  bool get isLoading => _isLoading;
 
   UserProvider() {
-    _loadSampleUsers();
+    loadUsers();
     _loadCurrentUser();
+  }
+
+  // Carregar usuários da API
+  Future<void> loadUsers() async {
+    _isLoading = true;
+    notifyListeners();
+    
+    try {
+      final response = await ApiService.getAllUsers();
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        _users = data.map((json) => User.fromJson(json)).toList();
+      }
+    } catch (e) {
+      print('Erro ao carregar usuários: $e');
+      // Fallback para dados de exemplo se a API falhar
+      _loadSampleUsers();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Buscar usuário por ID
+  Future<User?> getUserById(int id) async {
+    try {
+      final response = await ApiService.getUserById(id);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return User.fromJson(data);
+      }
+    } catch (e) {
+      print('Erro ao buscar usuário: $e');
+    }
+    return null;
+  }
+
+  // Editar perfil do usuário
+  Future<bool> editProfile({
+    required int id,
+    required String nome,
+    required String nivelAcesso,
+    XFile? imageFile,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    
+    try {
+      final response = await ApiService.editUser(
+        id: id,
+        nome: nome,
+        nivelAcesso: nivelAcesso,
+        imageFile: imageFile,
+      );
+      
+      if (response.statusCode == 200) {
+        // Recarregar usuários após edição
+        await loadUsers();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Erro ao editar perfil: $e');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Alterar senha
+  Future<bool> changePassword({
+    required int id,
+    required String novaSenha,
+  }) async {
+    try {
+      final response = await ApiService.changePassword(
+        id: id,
+        novaSenha: novaSenha,
+      );
+      
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Erro ao alterar senha: $e');
+      return false;
+    }
   }
 
   void _loadCurrentUser() {
@@ -191,7 +296,7 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  User? getUserById(String userId) {
+  User? getUserByIdFromList(String userId) {
     try {
       return _users.firstWhere((user) => user.id == userId);
     } catch (e) {

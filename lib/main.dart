@@ -27,6 +27,7 @@ import 'screens/discover/discover_screen.dart';
 import 'providers/auth_provider.dart';
 import 'providers/post_provider.dart';
 import 'providers/user_provider.dart';
+import 'providers/mensagem_provider.dart';
 import 'utils/app_theme.dart';
 
 void main() {
@@ -43,6 +44,7 @@ class InspirartApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => PostProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => MensagemProvider()),
       ],
       child: MaterialApp.router(
         title: 'Inspirart',

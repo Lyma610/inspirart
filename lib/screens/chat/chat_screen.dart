@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../providers/user_provider.dart';
+import '../../providers/mensagem_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../utils/app_theme.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -15,6 +18,96 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
+  final List<Map<String, dynamic>> _messages = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMessages();
+  }
+
+  Future<void> _loadMessages() async {
+    // Simular carregamento de mensagens
+    setState(() => _isLoading = true);
+    await Future.delayed(const Duration(seconds: 1));
+    setState(() => _isLoading = false);
+  }
+
+  Future<void> _sendMessage() async {
+    if (_messageController.text.trim().isEmpty) return;
+
+    final message = _messageController.text.trim();
+    _messageController.clear();
+
+    // Adicionar mensagem localmente
+    setState(() {
+      _messages.add({
+        'text': message,
+        'isSentByMe': true,
+        'time': DateTime.now(),
+        'type': 'text',
+      });
+    });
+
+    // Simular envio para API (você pode implementar a API real aqui)
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final mensagemProvider = context.read<MensagemProvider>();
+      
+      if (authProvider.userEmail != null) {
+        await mensagemProvider.sendMensagem(
+          nome: authProvider.userName ?? 'Usuário',
+          email: authProvider.userEmail!,
+          assunto: 'Mensagem do chat',
+          mensagem: message,
+        );
+      }
+    } catch (e) {
+      // Em caso de erro, mostrar feedback
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao enviar mensagem: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _sendImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
+      );
+      
+      if (image != null) {
+        setState(() {
+          _messages.add({
+            'text': 'Imagem enviada',
+            'isSentByMe': true,
+            'time': DateTime.now(),
+            'type': 'image',
+            'imagePath': image.path,
+          });
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao enviar imagem: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +122,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         title: Consumer<UserProvider>(
           builder: (context, userProvider, child) {
-            final user = userProvider.getUserById(widget.userId);
+            final user = userProvider.getUserByIdFromList(widget.userId);
             if (user == null) return const SizedBox();
             
             return Row(
@@ -121,9 +214,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(Icons.add_photo_alternate),
-                    onPressed: () {
-                      // TODO: Implementar envio de imagem
-                    },
+                    onPressed: _sendImage,
                   ),
                   Expanded(
                     child: TextField(
@@ -148,12 +239,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   IconButton(
                     icon: const Icon(Icons.send),
                     color: AppTheme.primaryColor,
-                    onPressed: () {
-                      if (_messageController.text.trim().isNotEmpty) {
-                        // TODO: Enviar mensagem
-                        _messageController.clear();
-                      }
-                    },
+                    onPressed: _sendMessage,
                   ),
                 ],
               ),
