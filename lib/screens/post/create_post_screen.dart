@@ -27,7 +27,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   bool _isLoading = false;
 
   List<Category> _availableCategories = [];
+  List<Genre> _availableGenres = [];
   Category? _selectedCategoryObj;
+  Genre? _selectedGenreObj;
 
   @override
   void initState() {
@@ -48,9 +50,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     if (postProvider.categories.isEmpty) {
       await postProvider.loadCategories();
     }
+    if (postProvider.genres.isEmpty) {
+      await postProvider.loadGenres();
+    }
     
     setState(() {
       _availableCategories = postProvider.categories;
+      _availableGenres = postProvider.genres;
     });
   }
 
@@ -239,7 +245,38 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               },
             ),
             
-
+            const SizedBox(height: 24),
+            
+            // Seleção de gênero
+            const Text(
+              'Gênero',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            
+            DropdownButtonFormField<Genre>(
+              value: _selectedGenreObj,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                hintText: 'Selecione um gênero (opcional)',
+              ),
+              items: _availableGenres.map((genre) {
+                return DropdownMenuItem<Genre>(
+                  value: genre,
+                  child: Text(genre.nome),
+                );
+              }).toList(),
+              onChanged: (Genre? value) {
+                setState(() {
+                  _selectedGenreObj = value;
+                });
+              },
+            ),
             
             const SizedBox(height: 24),
             
@@ -350,6 +387,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         descricao: _captionController.text.trim(),
         categoriaId: _selectedCategoryObj!.id,
         usuarioId: int.parse(authProvider.userId ?? '1'),
+        generoId: _selectedGenreObj?.id,
         imageFile: widget.images![_currentImageIndex],
       );
 

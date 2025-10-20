@@ -97,17 +97,21 @@ class ApiService {
     required String descricao,
     required int categoriaId,
     required int usuarioId,
+    int? generoId,
     XFile? imageFile,
   }) async {
     final url = Uri.parse('$baseUrl/postagem/create');
     
     var request = http.MultipartRequest('POST', url);
     
-    // Adicionar campos do formulário
-    request.fields['titulo'] = titulo;
+    // Adicionar campos do formulário conforme esperado pelo backend
+    request.fields['legenda'] = titulo;
     request.fields['descricao'] = descricao;
     request.fields['categoria.id'] = categoriaId.toString();
-    request.fields['usuario.id'] = usuarioId.toString();}
+    request.fields['usuario.id'] = usuarioId.toString();
+    if (generoId != null) {
+      request.fields['genero.id'] = generoId.toString();
+    }
     
     // Adicionar arquivo se fornecido
     if (imageFile != null) {
