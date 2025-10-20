@@ -3,13 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../providers/post_provider.dart';
-import '../../providers/user_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../../utils/app_theme.dart';
-import '../../utils/platform_helper.dart';
 import 'dart:typed_data';
-import 'dart:io';
 
 class CreatePostScreen extends StatefulWidget {
   final List<XFile>? images;
@@ -23,7 +20,6 @@ class CreatePostScreen extends StatefulWidget {
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final TextEditingController _captionController = TextEditingController();
   int _currentImageIndex = 0;
-  final List<String> _selectedCategories = [];
   bool _isLoading = false;
 
   List<Category> _availableCategories = [];
@@ -387,7 +383,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         descricao: _captionController.text.trim(),
         categoriaId: _selectedCategoryObj!.id,
         usuarioId: int.parse(authProvider.userId ?? '1'),
-        generoId: _selectedGenreObj?.id,
+        generoId: _selectedGenreObj?.id ?? 1, // Usar gênero padrão se não selecionado
         imageFile: widget.images![_currentImageIndex],
       );
 
@@ -404,6 +400,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         
         // Recarregar posts
         await postProvider.loadPosts();
+        
+        // Aguardar um pouco para mostrar a mensagem de sucesso
+        await Future.delayed(const Duration(seconds: 1));
+        
+        context.go('/home');
+      } else if (response.statusCode == 500 && context.mounted) {
+        // Erro 500 - redirecionar para home
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erro no servidor. Voltando para o feed...'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+        
+        // Aguardar um pouco para mostrar a mensagem
+        await Future.delayed(const Duration(seconds: 1));
         
         context.go('/home');
       } else if (context.mounted) {

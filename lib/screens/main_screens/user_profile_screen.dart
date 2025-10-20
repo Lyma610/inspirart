@@ -49,7 +49,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         label: 'Compartilhar perfil',
                         onTap: () {
                           context.pop();
-                          final user = context.read<UserProvider>().getUserById(widget.userId);
+                          final user = context.read<UserProvider>().getUserByIdFromList(widget.userId);
                           if (user != null) {
                             Share.share(
                               'Confira o perfil de ${user.name} no Inspirart!\nhttps://inspirart.com/user/${user.id}',
@@ -85,7 +85,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       ),
       body: Consumer<UserProvider>(
         builder: (context, userProvider, child) {
-          final user = userProvider.getUserById(widget.userId);
+          final user = userProvider.getUserByIdFromList(widget.userId);
           
           if (user == null) {
             return const Center(child: CircularProgressIndicator());
@@ -107,8 +107,17 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                         children: [
                           CircleAvatar(
                             radius: 50,
-                            backgroundImage: NetworkImage(user.avatar),
+                            backgroundImage: user.avatar.isNotEmpty 
+                                ? NetworkImage(user.avatar)
+                                : null,
                             backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                            child: user.avatar.isEmpty 
+                                ? Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: AppTheme.primaryColor,
+                                  )
+                                : null,
                           ),
                           const SizedBox(width: 24),
                           
@@ -371,20 +380,21 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                'https://via.placeholder.com/200x200/${_getRandomColor()}/FFFFFF?text=Post+${index + 1}',
-                fit: BoxFit.cover,
+              child: Container(
+                color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                child: Center(
+                  child: Icon(
+                    Icons.image,
+                    size: 40,
+                    color: AppTheme.primaryColor.withValues(alpha: 0.5),
+                  ),
+                ),
               ),
             ),
           );
         },
       ),
     );
-  }
-
-  String _getRandomColor() {
-    final colors = ['6B46C1', '9F7AEA', 'ED8936', '38A169', 'E53E3E', '3182CE'];
-    return colors[DateTime.now().millisecond % colors.length];
   }
 
   Widget _buildMenuOption({
