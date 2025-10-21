@@ -18,6 +18,8 @@ class PostScreen extends StatefulWidget {
 }
 
 class _PostScreenState extends State<PostScreen> {
+  bool _isLiked = false;
+  bool _isSaved = false;
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +55,12 @@ class _PostScreenState extends State<PostScreen> {
             (p) => p.id == widget.postId,
             orElse: () => postProvider.posts.first,
           );
+          
+          if (post == null) {
+            return const Center(
+              child: Text('Post não encontrado'),
+            );
+          }
           
           return SingleChildScrollView(
             child: Column(
@@ -153,6 +161,9 @@ class _PostScreenState extends State<PostScreen> {
           // Botão de curtir
           GestureDetector(
             onTap: () {
+              setState(() {
+                _isLiked = !_isLiked;
+              });
               // Chamar API para curtir
               Provider.of<PostProvider>(context, listen: false)
                 .toggleLike(post.id);
@@ -160,8 +171,8 @@ class _PostScreenState extends State<PostScreen> {
             child: Row(
               children: [
                 Icon(
-                  post.isLiked ? Icons.favorite : Icons.favorite_border,
-                  color: post.isLiked ? AppTheme.errorColor : AppTheme.textColor,
+                  _isLiked ? Icons.favorite : Icons.favorite_border,
+                  color: _isLiked ? AppTheme.errorColor : AppTheme.textColor,
                   size: 28,
                 ),
                 const SizedBox(width: 8),
@@ -220,13 +231,16 @@ class _PostScreenState extends State<PostScreen> {
           // Botão de salvar
           GestureDetector(
             onTap: () {
+              setState(() {
+                _isSaved = !_isSaved;
+              });
               // Chamar API para salvar
               Provider.of<PostProvider>(context, listen: false)
                 .toggleSavePost(post.id);
             },
             child: Icon(
-              post.isSaved ? Icons.bookmark : Icons.bookmark_border,
-              color: post.isSaved ? AppTheme.primaryColor : AppTheme.textColor,
+              _isSaved ? Icons.bookmark : Icons.bookmark_border,
+              color: _isSaved ? AppTheme.primaryColor : AppTheme.textColor,
               size: 28,
             ),
           ),

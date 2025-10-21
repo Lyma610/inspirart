@@ -5,6 +5,41 @@ import '../config/api_config.dart';
 
 class ApiService {
   static String get baseUrl => ApiConfig.getBaseUrl();
+  
+  // Testar conectividade com o backend
+  static Future<bool> testConnection() async {
+    try {
+      final url = Uri.parse('$baseUrl/usuario/findAll');
+      print('Testando conexão com: $url');
+      final response = await http.get(url);
+      print('Teste de conexão - Status: ${response.statusCode}');
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Erro no teste de conexão: $e');
+      return false;
+    }
+  }
+
+  // Testar se usuário tem foto
+  static Future<bool> testUserHasPhoto(int userId) async {
+    try {
+      final url = Uri.parse('$baseUrl/usuario/findById/$userId');
+      print('Testando se usuário tem foto: $url');
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final hasPhoto = data['foto'] != null && 
+                        (data['foto'] is List ? (data['foto'] as List).isNotEmpty : 
+                         data['foto'].toString().isNotEmpty);
+        print('Usuário tem foto: $hasPhoto');
+        return hasPhoto;
+      }
+      return false;
+    } catch (e) {
+      print('Erro no teste de foto do usuário: $e');
+      return false;
+    }
+  }
 
   // Registro de usuário
   static Future<http.Response> registerUser({
@@ -183,26 +218,56 @@ class ApiService {
     required int id,
     required String nome,
     required String nivelAcesso,
+    String? bio,
+    String? email,
+    String? senha,
     XFile? imageFile,
   }) async {
+    print('API: Editando usuário ID: $id');
+    print('API: Nome: $nome, Bio: $bio, Tem imagem: ${imageFile != null}');
+    
     final url = Uri.parse('$baseUrl/usuario/editar/$id');
+    print('API: URL: $url');
     
     var request = http.MultipartRequest('PUT', url);
     
     request.fields['nome'] = nome;
     request.fields['nivelAcesso'] = nivelAcesso;
-    
-    if (imageFile != null) {
-      final bytes = await imageFile.readAsBytes();
-      request.files.add(http.MultipartFile.fromBytes(
-        'file',
-        bytes,
-        filename: imageFile.name,
-      ));
+    if (bio != null && bio.isNotEmpty) {
+      request.fields['bio'] = bio;
+    }
+    if (email != null && email.isNotEmpty) {
+      request.fields['email'] = email;
+    }
+    if (senha != null && senha.isNotEmpty) {
+      request.fields['senha'] = senha;
     }
     
-    final streamedResponse = await request.send();
-    return await http.Response.fromStream(streamedResponse);
+    if (imageFile != null) {
+      try {
+        final bytes = await imageFile.readAsBytes();
+        request.files.add(http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: imageFile.name,
+        ));
+        print('API: Arquivo de imagem adicionado: ${imageFile.name}');
+      } catch (e) {
+        print('API: Erro ao ler arquivo de imagem: $e');
+        throw Exception('Erro ao processar imagem: $e');
+      }
+    }
+    
+    try {
+      print('API: Enviando requisição...');
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      print('API: Resposta recebida - Status: ${response.statusCode}');
+      return response;
+    } catch (e) {
+      print('API: Erro na requisição: $e');
+      throw Exception('Erro de conexão: $e');
+    }
   }
 
   // Alterar senha
@@ -302,22 +367,49 @@ class ApiService {
     return response;
   }
 
-  // Criar reação
+  // Criar reação (like/save/comentário)
   static Future<http.Response> createReaction({
     required int usuarioId,
     required int postagemId,
     required String tipoReacao,
+    String? comentario,
   }) async {
     final url = Uri.parse('$baseUrl/reacao/create');
-    final response = await http.post(
-      url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'usuario': {'id': usuarioId},
-        'postagem': {'id': postagemId},
-        'tipoReacao': tipoReacao,
-      }),
-    );
+    final body = {
+      'usuario': {'id': usuarioId},
+      'postagem': {'id': postagemId},
+      'tipoReacao': tipoReacao,
+    };
+    
+    if (comentario != null && comentario.isNotEmpty) {
+      body['comentario'] = comentario;
+    }
+    
+    print('API: Criando reação - URL: $url');
+    print('API: Body: ${jsonEncode(body)}');
+    
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+      print('API: Resposta da reação - Status: ${response.statusCode}');
+      print('API: Resposta da reação - Body: ${response.body}');
+      return response;
+    } catch (e) {
+      print('API: Erro ao criar reação: $e');
+      rethrow;
+    }
+  }
+
+  // Buscar reações de um post específico
+  static Future<http.Response> getPostReactions(int postagemId) async {
+    // Como o backend pode não ter o endpoint específico, vamos buscar todas e filtrar
+    final url = Uri.parse('$baseUrl/reacao/findAll');
+    final response = await http.get(url);
+    print('API: Buscando reações do post $postagemId - URL: $url');
+    print('API: Status: ${response.statusCode}');
     return response;
   }
 
@@ -341,6 +433,13 @@ class ApiService {
   static Future<http.Response> getAllCategories() async {
     final url = Uri.parse('$baseUrl/categoria/findAll');
     final response = await http.get(url);
+    return response;
+  }
+
+  // Excluir postagem
+  static Future<http.Response> deletePost(int postId) async {
+    final url = Uri.parse('$baseUrl/postagem/delete/$postId');
+    final response = await http.delete(url);
     return response;
   }
 }

@@ -17,9 +17,11 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Column(
+    return GestureDetector(
+      onTap: () => context.go('/post/${post.id}'),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 16),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Cabeçalho do post
@@ -31,8 +33,15 @@ class PostCard extends StatelessWidget {
                   onTap: () => context.go('/user/${post.userId}'),
                   child: CircleAvatar(
                     radius: 20,
-                    backgroundImage: NetworkImage(post.userAvatar),
                     backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                    child: ClipOval(
+                      child: CachedImage(
+                        imageUrl: post.userAvatar,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -71,14 +80,47 @@ class PostCard extends StatelessWidget {
           ),
           
           // Imagem do post
-          AspectRatio(
-            aspectRatio: 1,
-            child: CachedImage(
-              imageUrl: post.imageUrl,
+          if (post.imageUrl.isNotEmpty)
+            Container(
+              height: 300,
               width: double.infinity,
-              borderRadius: BorderRadius.circular(8),
+              child: CachedImage(
+                imageUrl: post.imageUrl,
+                width: double.infinity,
+                height: 300,
+                fit: BoxFit.cover,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            )
+          else
+            Container(
+              height: 300,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.image_not_supported,
+                      size: 64,
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Imagem não disponível',
+                      style: TextStyle(
+                        color: AppTheme.textSecondaryColor,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
           
           // Ações do post
           Padding(
@@ -214,6 +256,7 @@ class PostCard extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -244,7 +287,7 @@ class PostCard extends StatelessWidget {
               leading: const Icon(Icons.report),
               title: const Text('Reportar'),
               onTap: () {
-                Navigator.pop(context);
+                context.pop();
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
@@ -252,12 +295,12 @@ class PostCard extends StatelessWidget {
                     content: Text('Você tem certeza que deseja reportar este post?'),
                     actions: [
                       TextButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => context.pop(),
                         child: Text('Cancelar'),
                       ),
                       TextButton(
                         onPressed: () {
-                          Navigator.pop(context);
+                          context.pop();
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Post reportado com sucesso'))
                           );
@@ -274,7 +317,7 @@ class PostCard extends StatelessWidget {
               leading: const Icon(Icons.copy),
               title: const Text('Copiar link'),
               onTap: () async {
-                Navigator.pop(context);
+                context.pop();
                 await Clipboard.setData(ClipboardData(text: 'https://inspirart.app/post/${post.id}'));
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -286,7 +329,7 @@ class PostCard extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.close),
               title: const Text('Cancelar'),
-              onTap: () => Navigator.pop(context),
+              onTap: () => context.pop(),
             ),
           ],
         ),

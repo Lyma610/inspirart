@@ -20,6 +20,10 @@ class _FollowersScreenState extends State<FollowersScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    // Carregar dados de seguidores
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<UserProvider>(context, listen: false).loadUsers();
+    });
   }
 
   @override
@@ -172,8 +176,13 @@ class _FollowersScreenState extends State<FollowersScreen>
             // Avatar do usuário
             CircleAvatar(
               radius: 30,
-              backgroundImage: NetworkImage(user.avatar),
-                                      backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+              backgroundImage: user.avatar.isNotEmpty
+                  ? NetworkImage(user.avatar)
+                  : null,
+              backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+              child: user.avatar.isEmpty
+                  ? const Icon(Icons.person, size: 30)
+                  : null,
             ),
             
             const SizedBox(width: 16),

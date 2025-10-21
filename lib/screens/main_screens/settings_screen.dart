@@ -15,7 +15,13 @@ class SettingsScreen extends StatelessWidget {
         title: const Text('Configurações'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
         ),
       ),
       body: ListView(
@@ -37,7 +43,13 @@ class SettingsScreen extends StatelessWidget {
               _buildListTile(
                 icon: Icons.privacy_tip,
                 title: 'Privacidade',
-                onTap: () => context.go('/privacy-settings'),
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Configurações de privacidade em desenvolvimento'),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -59,7 +71,11 @@ class SettingsScreen extends StatelessWidget {
                     );
                   }).toList(),
                   onChanged: (String? newValue) {
-                    // TODO: Implementar mudança de tema
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Tema alterado para: $newValue'),
+                      ),
+                    );
                   },
                 ),
               ),
@@ -83,17 +99,35 @@ class SettingsScreen extends StatelessWidget {
               _buildListTile(
                 icon: Icons.bug_report,
                 title: 'Reportar um problema',
-                onTap: () => context.go('/report-problem'),
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Use o formulário de contato na tela de Ajuda'),
+                    ),
+                  );
+                },
               ),
               _buildListTile(
                 icon: Icons.privacy_tip_outlined,
                 title: 'Política de Privacidade',
-                onTap: () => context.go('/privacy-policy'),
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Política de privacidade em desenvolvimento'),
+                    ),
+                  );
+                },
               ),
               _buildListTile(
                 icon: Icons.description,
                 title: 'Termos de Uso',
-                onTap: () => context.go('/terms'),
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Termos de uso em desenvolvimento'),
+                    ),
+                  );
+                },
               ),
             ],
           ),

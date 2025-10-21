@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../providers/user_provider.dart';
+import '../../providers/reacao_provider.dart';
 import '../../utils/app_theme.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -13,6 +13,15 @@ class NotificationsScreen extends StatefulWidget {
 
 class _NotificationsScreenState extends State<NotificationsScreen> {
   String _selectedTab = 'Todas';
+
+  @override
+  void initState() {
+    super.initState();
+    // Carregar notificações reais
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<ReacaoProvider>(context, listen: false).loadReacoes();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -94,23 +103,76 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _buildNotificationsList() {
-    final notifications = _getNotificationsForTab(_selectedTab);
-    
-    if (notifications.isEmpty) {
-      return _buildEmptyState();
-    }
-    
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: notifications.length,
-      itemBuilder: (context, index) {
-        final notification = notifications[index];
-        return _buildNotificationItem(notification);
+    return Consumer<ReacaoProvider>(
+      builder: (context, reacaoProvider, child) {
+        final reactions = reacaoProvider.reacoes;
+        
+        // Filtrar reações baseado na aba selecionada
+        List<dynamic> filteredReactions = reactions.where((reaction) {
+          final tipoReacao = reaction.tipoReacao;
+          switch (_selectedTab) {
+            case 'Curtidas':
+              return tipoReacao == 'CURTIR';
+            case 'Comentários':
+              return tipoReacao == 'COMENTAR';
+            case 'Seguidores':
+              return false; // Não implementado ainda
+            case 'Mentions':
+              return false; // Não implementado ainda
+            default:
+              return true; // Todas
+          }
+        }).toList();
+        
+        if (filteredReactions.isEmpty) {
+          return _buildEmptyState();
+        }
+        
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: filteredReactions.length,
+          itemBuilder: (context, index) {
+            final reaction = filteredReactions[index];
+            return _buildNotificationFromReaction(reaction);
+          },
+        );
       },
     );
   }
 
-  Widget _buildNotificationItem(Map<String, dynamic> notification) {
+  Widget _buildNotificationFromReaction(dynamic reaction) {
+    final tipoReacao = reaction.tipoReacao ?? '';
+    final comentario = reaction.comentario ?? '';
+    final dataReacao = reaction.dataReacao ?? '';
+    
+    // Criar objetos mock para usuario e postagem se não existirem
+    final usuario = {
+      'nome': 'Usuário',
+      'foto': '',
+    };
+    final postagem = {
+      'id': '1',
+      'conteudo': null,
+    };
+    
+    String action = '';
+    String target = '';
+    
+    switch (tipoReacao) {
+      case 'CURTIR':
+        action = 'curtiu sua publicação';
+        break;
+      case 'COMENTAR':
+        action = 'comentou em sua publicação';
+        target = '"$comentario"';
+        break;
+      case 'SALVAR':
+        action = 'salvou sua publicação';
+        break;
+      default:
+        action = 'interagiu com sua publicação';
+    }
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -128,13 +190,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: Row(
         children: [
           // Avatar do usuário
-          GestureDetector(
-            onTap: () => context.go('/user/${notification['userId']}'),
-            child: CircleAvatar(
-              radius: 24,
-              backgroundImage: NetworkImage(notification['userAvatar']),
-              backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-            ),
+          CircleAvatar(
+            radius: 24,
+            backgroundImage: usuario['foto'] != null && (usuario['foto'] as String).isNotEmpty
+                ? NetworkImage(usuario['foto'] as String)
+                : null,
+            backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+            child: usuario['foto'] == null || (usuario['foto'] as String).isEmpty
+                ? const Icon(Icons.person, size: 24)
+                : null,
           ),
           const SizedBox(width: 12),
           
@@ -151,21 +215,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       color: AppTheme.textColor,
                     ),
                     children: [
-                      WidgetSpan(
-                        child: GestureDetector(
-                          onTap: () => context.go('/user/${notification['userId']}'),
-                          child: Text(
-                            notification['userName'],
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.textColor,
-                            ),
-                          ),
+                      TextSpan(
+                        text: usuario['nome'] ?? 'Usuário',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textColor,
                         ),
                       ),
-                      TextSpan(text: ' ${notification['action']}'),
-                      if (notification['target'] != null) ...[
-                        TextSpan(text: ' ${notification['target']}'),
+                      TextSpan(text: ' $action'),
+                      if (target.isNotEmpty) ...[
+                        TextSpan(text: ' $target'),
                       ],
                     ],
                   ),
@@ -174,7 +233,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 // Tempo
                 const SizedBox(height: 4),
                 Text(
-                  notification['timeAgo'],
+                  _formatTimeAgo(dataReacao),
                   style: TextStyle(
                     fontSize: 12,
                     color: AppTheme.textSecondaryColor,
@@ -184,17 +243,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ),
           ),
           
-          // Botão de ação ou imagem
-          if (notification['type'] == 'follow') ...[
-            _buildFollowButton(notification['userId']),
-          ] else if (notification['imageUrl'] != null) ...[
+          // Imagem da postagem se disponível
+          if (postagem['conteudo'] != null) ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
-                notification['imageUrl']!,
+                'http://localhost:8080/postagem/image/${postagem['id']}',
                 width: 50,
                 height: 50,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 50,
+                    height: 50,
+                    color: AppTheme.textSecondaryColor.withValues(alpha: 0.1),
+                    child: const Icon(Icons.image, size: 24),
+                  );
+                },
               ),
             ),
           ],
@@ -203,35 +268,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildFollowButton(String userId) {
-    return Consumer<UserProvider>(
-      builder: (context, userProvider, child) {
-        final isFollowing = userProvider.following.any((user) => user.id == userId);
-        
-        return ElevatedButton(
-          onPressed: () {
-            userProvider.toggleFollow(userId);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: isFollowing ? AppTheme.surfaceColor : AppTheme.primaryColor,
-            foregroundColor: isFollowing ? AppTheme.primaryColor : Colors.white,
-            side: isFollowing ? BorderSide(color: AppTheme.primaryColor) : null,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-          ),
-          child: Text(
-            isFollowing ? 'Seguindo' : 'Seguir',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        );
-      },
-    );
-  }
+
 
   Widget _buildEmptyState() {
     String message;
@@ -291,71 +328,27 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  List<Map<String, dynamic>> _getNotificationsForTab(String tab) {
-    final allNotifications = [
-      {
-        'id': '1',
-        'type': 'like',
-        'userId': 'user1',
-        'userName': 'ArtistaGrafite',
-        'userAvatar': 'https://via.placeholder.com/50',
-        'action': 'curtiu sua publicação',
-        'imageUrl': 'https://via.placeholder.com/100x100/6B46C1/FFFFFF?text=Post',
-        'timeAgo': '2 min atrás',
-      },
-      {
-        'id': '2',
-        'type': 'comment',
-        'userId': 'user2',
-        'userName': 'FotógrafoPro',
-        'userAvatar': 'https://via.placeholder.com/50',
-        'action': 'comentou em sua publicação',
-        'target': '"Que arte incrível! 👏"',
-        'imageUrl': 'https://via.placeholder.com/100x100/ED8936/FFFFFF?text=Post',
-        'timeAgo': '15 min atrás',
-      },
-      {
-        'id': '3',
-        'type': 'follow',
-        'userId': 'user3',
-        'userName': 'DesignerCriativo',
-        'userAvatar': 'https://via.placeholder.com/50',
-        'action': 'começou a seguir você',
-        'timeAgo': '1 hora atrás',
-      },
-      {
-        'id': '4',
-        'type': 'like',
-        'userId': 'user4',
-        'userName': 'IlustradorArte',
-        'userAvatar': 'https://via.placeholder.com/50',
-        'action': 'curtiu sua publicação',
-        'imageUrl': 'https://via.placeholder.com/100x100/9F7AEA/FFFFFF?text=Post',
-        'timeAgo': '2 horas atrás',
-      },
-      {
-        'id': '5',
-        'type': 'mention',
-        'userId': 'user5',
-        'userName': 'ArteUrbana',
-        'userAvatar': 'https://via.placeholder.com/50',
-        'action': 'mencionou você em um comentário',
-        'target': '"@SeuUsuario, veja essa inspiração!"',
-        'timeAgo': '3 horas atrás',
-      },
-    ];
+  String _formatTimeAgo(String dateString) {
+    if (dateString.isEmpty) return 'Agora';
     
-    switch (tab) {
-      case 'Curtidas':
-        return allNotifications.where((n) => n['type'] == 'like').toList();
-      case 'Comentários':
-        return allNotifications.where((n) => n['type'] == 'comment').toList();
-      case 'Seguidores':
-        return allNotifications.where((n) => n['type'] == 'follow').toList();
-      case 'Mentions':
-        return allNotifications.where((n) => n['type'] == 'mention').toList();
-      default:
-        return allNotifications;
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+      
+      if (difference.inMinutes < 1) {
+        return 'Agora';
+      } else if (difference.inHours < 1) {
+        return '${difference.inMinutes}m atrás';
+      } else if (difference.inDays < 1) {
+        return '${difference.inHours}h atrás';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays}d atrás';
+      } else {
+        return '${(difference.inDays / 7).floor()}s atrás';
+      }
+    } catch (e) {
+      return 'Agora';
     }
   }
 } 

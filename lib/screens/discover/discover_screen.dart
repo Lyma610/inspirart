@@ -26,6 +26,45 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     'Escultura',
   ];
 
+  void _showSearchDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Pesquisar'),
+        content: TextField(
+          decoration: const InputDecoration(
+            hintText: 'Digite sua pesquisa...',
+            border: OutlineInputBorder(),
+          ),
+          onSubmitted: (value) {
+            context.pop();
+            // Implementar lógica de pesquisa
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Pesquisando por: $value'),
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('Cancelar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Carregar usuários para descobrir
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<UserProvider>(context, listen: false).loadUsers();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -42,7 +81,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () {
-              // TODO: Abrir pesquisa
+              _showSearchDialog();
             },
           ),
         ],
@@ -138,8 +177,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                             onTap: () => context.go('/user/${user.id}'),
                             child: CircleAvatar(
                               radius: 30,
-                              backgroundImage: NetworkImage(user.avatar),
+                              backgroundImage: user.avatar.isNotEmpty
+                                  ? NetworkImage(user.avatar)
+                                  : null,
                               backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                              child: user.avatar.isEmpty
+                                  ? const Icon(Icons.person, size: 30)
+                                  : null,
                             ),
                           ),
                           const SizedBox(width: 16),

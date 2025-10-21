@@ -26,7 +26,15 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            // Verificar se há rotas na pilha de navegação
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              // Se não há rotas anteriores, navegar para home
+              context.go('/home');
+            }
+          },
         ),
         actions: [
           IconButton(
