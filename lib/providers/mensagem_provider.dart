@@ -139,3 +139,4 @@ class MensagemProvider extends ChangeNotifier {
     return _mensagens.where((msg) => msg.statusMensagem == 'ATIVO').length;
   }
 }
+

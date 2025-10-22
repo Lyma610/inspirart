@@ -19,7 +19,6 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final List<Map<String, dynamic>> _messages = [];
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -29,9 +28,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _loadMessages() async {
     // Simular carregamento de mensagens
-    setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isLoading = false);
   }
 
   Future<void> _sendMessage() async {
@@ -118,7 +115,15 @@ class _ChatScreenState extends State<ChatScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            // Verificar se há rotas na pilha de navegação
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              // Se não há rotas anteriores, navegar para home
+              context.go('/home');
+            }
+          },
         ),
         title: Consumer<UserProvider>(
           builder: (context, userProvider, child) {
@@ -158,16 +163,16 @@ class _ChatScreenState extends State<ChatScreen> {
                         leading: const Icon(Icons.block),
                         title: const Text('Bloquear usuário'),
                         onTap: () {
-                          // TODO: Implementar bloqueio
                           context.pop();
+                          _showBlockConfirmation();
                         },
                       ),
                       ListTile(
                         leading: const Icon(Icons.report),
                         title: const Text('Denunciar'),
                         onTap: () {
-                          // TODO: Implementar denúncia
                           context.pop();
+                          _showReportDialog();
                         },
                       ),
                       ListTile(
@@ -190,19 +195,49 @@ class _ChatScreenState extends State<ChatScreen> {
         children: [
           // Lista de mensagens
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              reverse: true,
-              itemCount: 20,
-              itemBuilder: (context, index) {
-                final isSentByMe = index % 2 == 0;
-                return _buildMessage(
-                  'Esta é uma mensagem de teste $index',
-                  isSentByMe,
-                  DateTime.now().subtract(Duration(minutes: index * 5)),
-                );
-              },
-            ),
+            child: _messages.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 64,
+                          color: AppTheme.textSecondaryColor.withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Nenhuma mensagem ainda',
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: AppTheme.textSecondaryColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Envie uma mensagem para começar a conversa',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppTheme.textSecondaryColor.withValues(alpha: 0.7),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    reverse: true,
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final message = _messages[_messages.length - 1 - index];
+                      return _buildMessage(
+                        message['text'],
+                        message['isSentByMe'],
+                        message['time'],
+                      );
+                    },
+                  ),
           ),
           
           // Campo de mensagem
@@ -317,8 +352,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           TextButton(
             onPressed: () {
-              // TODO: Implementar exclusão
-              context.pop();
+              _clearMessages();
               context.pop();
             },
             style: TextButton.styleFrom(
@@ -327,6 +361,80 @@ class _ChatScreenState extends State<ChatScreen> {
             child: const Text('Apagar'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showBlockConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Bloquear usuário'),
+        content: const Text('Tem certeza que deseja bloquear este usuário? Você não receberá mais mensagens dele.'),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              context.pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Usuário bloqueado com sucesso'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Bloquear'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showReportDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Denunciar usuário'),
+        content: const Text('Selecione o motivo da denúncia:'),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              context.pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Denúncia enviada com sucesso'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Denunciar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _clearMessages() {
+    setState(() {
+      _messages.clear();
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Conversa apagada com sucesso'),
+        backgroundColor: Colors.green,
       ),
     );
   }

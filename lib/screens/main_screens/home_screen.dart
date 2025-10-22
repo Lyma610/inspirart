@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/post_provider.dart';
+import '../../providers/reacao_provider.dart';
 import '../../utils/app_theme.dart';
 import '../../widgets/post_card.dart';
 import '../../widgets/bottom_navigation.dart';
@@ -20,6 +21,22 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   final PageController _pageController = PageController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Carregar posts e reações quando a tela for inicializada
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final postProvider = Provider.of<PostProvider>(context, listen: false);
+      final reacaoProvider = Provider.of<ReacaoProvider>(context, listen: false);
+      
+      // Conectar os providers
+      reacaoProvider.setPostProvider(postProvider);
+      
+      postProvider.loadPosts();
+      reacaoProvider.loadReacoes();
+    });
+  }
 
   @override
   void dispose() {
@@ -185,6 +202,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                   fontSize: 18,
                                   color: AppTheme.textSecondaryColor,
                                 ),
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton(
+                                onPressed: () {
+                                  postProvider.loadPosts();
+                                },
+                                child: const Text('Recarregar Posts'),
                               ),
                             ],
                           ),

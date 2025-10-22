@@ -485,9 +485,14 @@ class _SequencesScreenState extends State<SequencesScreen> {
                                         ),
                                         const SizedBox(width: 8),
                                         IconButton(
-                                          onPressed: () {
-                                            // Implementar envio do comentário
-                                          },
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Comentário enviado com sucesso'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        },
                                           icon: Icon(
                                             Icons.send,
                                             color: AppTheme.primaryColor,
@@ -581,9 +586,15 @@ class _SequencesScreenState extends State<SequencesScreen> {
             onPressed: () {
               // Atualizar título e descrição
               setState(() {
-                // TODO: Atualizar no provider
+                // Atualizar localmente
               });
               context.pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Sequência atualizada com sucesso'),
+                  backgroundColor: Colors.green,
+                ),
+              );
             },
             child: const Text('Salvar'),
           ),

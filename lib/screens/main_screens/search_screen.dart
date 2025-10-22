@@ -122,7 +122,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 itemBuilder: (context, index) {
                   final post = posts[index];
                   return GestureDetector(
-                    onTap: () => context.go('/post'),
+                    onTap: () => context.go('/post/${post.id}'),
                     child: Image.network(
                       post.imageUrl,
                       fit: BoxFit.cover,
@@ -184,7 +184,7 @@ class _SearchScreenState extends State<SearchScreen> {
           itemBuilder: (context, index) {
             final post = posts[index];
             return GestureDetector(
-              onTap: () => context.go('/post'),
+              onTap: () => context.go('/post/${post.id}'),
               child: Image.network(
                 post.imageUrl,
                 fit: BoxFit.cover,

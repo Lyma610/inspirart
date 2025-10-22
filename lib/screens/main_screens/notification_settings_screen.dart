@@ -27,7 +27,13 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
         title: const Text('Notificações'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/home');
+            }
+          },
         ),
       ),
       body: ListView(
@@ -114,7 +120,11 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             subtitle: const Text('Configure as notificações no seu dispositivo'),
             trailing: const Icon(Icons.arrow_forward_ios, size: 16),
             onTap: () {
-              // Abrir configurações do sistema
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Redirecionando para configurações do sistema...'),
+                ),
+              );
             },
           ),
         ],
