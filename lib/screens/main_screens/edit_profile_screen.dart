@@ -255,7 +255,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     TextButton(
                       onPressed: () {
                         context.pop(); // Fechar dialog
-                        context.pop(); // Fechar tela de edição
+                        context.go('/home'); // Ir para a tela de home
                       },
                       style: TextButton.styleFrom(
                         foregroundColor: Colors.red,
@@ -266,11 +266,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               );
             } else {
-              if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go('/profile');
-              }
+              context.go('/home'); // Ir para a tela de home
             }
           },
         ),

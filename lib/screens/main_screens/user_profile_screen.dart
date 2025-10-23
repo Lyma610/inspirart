@@ -60,7 +60,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           final user = context.read<UserProvider>().getUserByIdFromList(widget.userId);
                           if (user != null) {
                             Share.share(
-                              'Confira o perfil de ${user.name} no Inspirart!\nhttps://inspirart.com/user/${user.id}',
+                              'Confira o perfil de ${user.name} no Eteria!\nhttps://inspirart.com/user/${user.id}',
                             );
                           }
                         },

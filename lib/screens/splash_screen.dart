@@ -88,7 +88,7 @@ class _SplashScreenState extends State<SplashScreen>
                     ),
                     const SizedBox(height: 30),
                     const Text(
-                      'INSPIRART',
+                      'ETERIA',
                       style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,

@@ -273,7 +273,7 @@ class UserProvider extends ChangeNotifier {
         name: 'Usuário',
         email: 'usuario@email.com',
         avatar: '',
-        bio: 'Bem-vindo ao Inspirart!',
+        bio: 'Bem-vindo ao Eteria!',
         followers: 0,
         following: 0,
         posts: 0,

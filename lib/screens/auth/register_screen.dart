@@ -108,7 +108,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                       const SizedBox(height: 20),
                       const Text(
-                        'Junte-se ao Inspirart',
+                        'Junte-se ao Eteria',
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,

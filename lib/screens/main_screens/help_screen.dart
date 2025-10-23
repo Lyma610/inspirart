@@ -57,7 +57,7 @@ class _HelpScreenState extends State<HelpScreen> {
             [
               _buildHelpItem(
                 'Como criar uma conta',
-                'Aprenda a criar e configurar sua conta no Inspirart',
+                'Aprenda a criar e configurar sua conta no Eteria',
                 Icons.person_add,
               ),
               _buildHelpItem(
