@@ -248,7 +248,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(
-                'http://localhost:8080/postagem/image/${postagem['id']}',
+                'https://tccbackend-completo.onrender.com/postagem/image/${postagem['id']}',
                 width: 50,
                 height: 50,
                 fit: BoxFit.cover,

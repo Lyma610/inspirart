@@ -53,3 +53,5 @@ class Reacao {
   // Verificar se é um comentário
   bool get isComment => tipoReacao == 'COMENTAR';
 }
+
+

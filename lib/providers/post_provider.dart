@@ -40,14 +40,14 @@ class Post {
     // Construir URL para buscar imagem do backend
     String imageUrl = '';
     if (json['id'] != null) {
-      imageUrl = 'http://localhost:8080/postagem/image/${json['id']}';
+      imageUrl = 'https://tccbackend-completo.onrender.com/postagem/image/${json['id']}';
       print('Post ID: ${json['id']} - URL da imagem: $imageUrl');
     } else {
       print('Post sem ID - JSON: $json');
     }
     
     // Processar foto do usuário diretamente do JSON
-    String userAvatar = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjIwIiBmaWxsPSIjOUNBM0FGIi8+Cjx0ZXh0IHg9IjUwIiB5PSI1NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMTIiPkE8L3RleHQ+Cjwvc3ZnPgo=';
+    String userAvatar = '';
     if (json['usuario']?['foto'] != null) {
       print('Processando foto do usuário: ${json['usuario']['nome']}');
       print('Tipo da foto: ${json['usuario']['foto'].runtimeType}');
@@ -67,7 +67,7 @@ class Post {
           // Verificar se a string não é muito grande (limite de 500KB)
           if (fotoString.length > 500000) {
             print('Foto muito grande (${fotoString.length} caracteres), usando placeholder');
-            userAvatar = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjIwIiBmaWxsPSIjOUNBM0FGIi8+Cjx0ZXh0IHg9IjUwIiB5PSI1NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMTIiPkE8L3RleHQ+Cjwvc3ZnPgo=';
+            userAvatar = '';
           } else if (fotoString.startsWith('data:image')) {
             userAvatar = fotoString;
             print('Foto já está em formato data:image');
@@ -78,7 +78,7 @@ class Post {
         }
       } catch (e) {
         print('Erro ao processar foto do usuário: $e');
-        userAvatar = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjIwIiBmaWxsPSIjOUNBM0FGIi8+Cjx0ZXh0IHg9IjUwIiB5PSI1NSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0id2hpdGUiIGZvbnQtc2l6ZT0iMTIiPkE8L3RleHQ+Cjwvc3ZnPgo=';
+        userAvatar = '';
       }
     } else {
       print('Usuário ${json['usuario']?['nome']} não tem foto');

@@ -81,6 +81,14 @@ class Base64Image extends StatelessWidget {
         return _buildErrorWidget();
       }
       
+      // Verificar se os dados são SVG (começam com <svg)
+      if (bytes.length >= 4 && 
+          bytes[0] == 0x3c && bytes[1] == 0x73 && 
+          bytes[2] == 0x76 && bytes[3] == 0x67) {
+        print('Base64Image: Dados SVG detectados, não é uma imagem válida');
+        return _buildErrorWidget();
+      }
+      
       return ClipRRect(
         borderRadius: borderRadius ?? BorderRadius.zero,
         child: Image.memory(
@@ -90,6 +98,7 @@ class Base64Image extends StatelessWidget {
           fit: fit,
           errorBuilder: (context, error, stackTrace) {
             print('Base64Image: Erro ao decodificar imagem base64: $error');
+            print('Base64Image: StackTrace: $stackTrace');
             return _buildErrorWidget();
           },
         ),

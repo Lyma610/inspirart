@@ -1,10 +1,10 @@
 class ApiConfig {
   // URL base da API - altere aqui para apontar para seu servidor
-  static const String baseUrl = 'http://localhost:8080';
+  static const String baseUrl = 'https://tccbackend-completo.onrender.com';
   
   // URLs alternativas para diferentes ambientes
   static const String localUrl = 'http://localhost:8080';
-  static const String productionUrl = 'https://seu-dominio.com';
+  static const String productionUrl = 'https://tccbackend-completo.onrender.com';
   
   // Configurações de timeout
   static const int connectTimeout = 30000; // 30 segundos

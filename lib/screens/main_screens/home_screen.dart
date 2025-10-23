@@ -94,26 +94,9 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Container(
                 width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(
-                  Icons.brush,
-                  color: Colors.white,
-                  size: 24,
-                ),
+                height: 40,                             
               ),
-              const SizedBox(width: 12),
-              const Text(
-                'Inspirart',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryColor,
-                ),
-              ),
+              
             ],
           ),
           actions: [
